@@ -1,14 +1,20 @@
 package services
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"image"
+	"image/jpeg"
+	"log"
 	"net/http"
+	"strconv"
+	"text/template"
 )
 
 var ImageTemplate string = `<!DOCTYPE html>
 							<html lang="en"><head></head>
 							<body><img src="data:image/jpg;base64,{{.Image}}"></body>`
-
 
 func ResponseWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
@@ -17,8 +23,7 @@ func ResponseWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	w.Write(response)
 }
 
-/*
-func ResponseWithImageTemp(w http.ResponseWithImage, img *image.Image){
+func ResponseWithImageTemp(w http.ResponseWriter, img *image.Image) {
 	buffer := new(bytes.Buffer)
 	if err := jpeg.Encode(buffer, *img, nil); err != nil {
 		log.Println("unable to encode image.")
@@ -36,7 +41,7 @@ func ResponseWithImageTemp(w http.ResponseWithImage, img *image.Image){
 
 }
 
-func ResponseWithImage(w http.ResponseWithImage, img *image.Image){
+func ResponseWithImage(w http.ResponseWriter, img *image.Image) {
 
 	buffer := new(bytes.Buffer)
 	if err := jpeg.Encode(buffer, *img, nil); err != nil {
@@ -47,4 +52,4 @@ func ResponseWithImage(w http.ResponseWithImage, img *image.Image){
 	if _, err := w.Write(buffer.Bytes()); err != nil {
 		log.Println("unable to write image.")
 	}
-}*/
+}

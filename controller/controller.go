@@ -2,15 +2,17 @@ package controller
 
 import (
 	"fmt"
+	"image"
+	"log"
 	"os"
 
 	"github.com/gorilla/sessions"
+	"golang.org/x/crypto/bcrypt"
 
 	"net/http"
 )
 
-var SESSION_KEY = "Test"
-var store = sessions.NewCookieStore([]byte(os.Getenv(SESSION_KEY)))
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
@@ -36,14 +38,51 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	loginSession, _ := store.Get(r, "loginSession")
 	username := loginSession.Values["username"].(string)
 	password := loginSession.Values["password"].(string)
-	if Verify(username, password) {
-		// http.Redirect(w, r, /api/video)
-		fmt.Fprintf(w, "username: "+username+"\n")
-		fmt.Fprintf(w, "password: "+password+"\n")
-		fmt.Fprint(w, "Login Success")
+	if Verify(w, username, password) {
+		loginSession.Values["is_authorized"] = true
+		// TODO: to video streaming page
 	}
 }
 
-func Verify(user string, pass string) bool {
-	return true
+func Verify(w http.ResponseWriter, user string, pass string) bool {
+	// TODO: manage user system with database
+	savePassword, readPasswordErr := os.ReadFile(user + ".txt")
+	if readPasswordErr != nil {
+		log.Fatal(readPasswordErr)
+	}
+
+	authPasswordStr := []byte(string(savePassword))
+	authPasswordByte, _ := bcrypt.GenerateFromPassword(authPasswordStr, bcrypt.DefaultCost)
+
+	hashCompareErr := bcrypt.CompareHashAndPassword(authPasswordByte, []byte(pass))
+	if hashCompareErr != nil {
+		fmt.Println(hashCompareErr)
+		fmt.Fprintf(w, "Failed to login\n")
+		return false
+	} else {
+		fmt.Fprintf(w, "User: "+user+" successfully login \n")
+		return true
+	}
+}
+
+func VideoStream(w http.ResponseWriter, r *http.Request) {
+	loginSession, _ := store.Get(r, "loginSession")
+	if authorized := loginSession.Values["is_authorized"].(bool); authorized {
+		fmt.Fprintln(w, "Image!")
+		// http.ServeFile(w, r, "./template/html/stream.html")
+		// image, _ := getImageFromFilePath("data/image.jpg")
+		// services.ResponseWithImage(w, &image)
+	} else {
+		fmt.Fprintln(w, "Not login yet")
+	}
+}
+
+func getImageFromFilePath(filePath string) (image.Image, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	image, _, err := image.Decode(f)
+	return image, err
 }
