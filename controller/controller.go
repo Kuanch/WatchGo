@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"go_rest/services"
 	"image"
 	"log"
 	"os"
@@ -26,25 +27,28 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		loginSession, _ := store.Get(r, "loginSession")
 		loginSession.Values["username"] = username
 		loginSession.Values["password"] = password
+		loginSession.Values["is_authorized"] = false
+		loginSession = Auth(r)
 		if err := loginSession.Save(r, w); err != nil {
 			fmt.Println(err)
 		}
 
-		http.Redirect(w, r, "/api/auth", http.StatusFound)
+		http.Redirect(w, r, "/api/video_feed", http.StatusFound)
 	}
 }
 
-func Auth(w http.ResponseWriter, r *http.Request) {
+func Auth(r *http.Request) *sessions.Session {
 	loginSession, _ := store.Get(r, "loginSession")
 	username := loginSession.Values["username"].(string)
 	password := loginSession.Values["password"].(string)
-	if Verify(w, username, password) {
+	if Verify(username, password) {
 		loginSession.Values["is_authorized"] = true
-		// TODO: to video streaming page
 	}
+
+	return loginSession
 }
 
-func Verify(w http.ResponseWriter, user string, pass string) bool {
+func Verify(user string, pass string) bool {
 	// TODO: manage user system with database
 	savePassword, readPasswordErr := os.ReadFile(user + ".txt")
 	if readPasswordErr != nil {
@@ -57,23 +61,19 @@ func Verify(w http.ResponseWriter, user string, pass string) bool {
 	hashCompareErr := bcrypt.CompareHashAndPassword(authPasswordByte, []byte(pass))
 	if hashCompareErr != nil {
 		fmt.Println(hashCompareErr)
-		fmt.Fprintf(w, "Failed to login\n")
 		return false
-	} else {
-		fmt.Fprintf(w, "User: "+user+" successfully login \n")
-		return true
 	}
+	return true
 }
 
 func VideoStream(w http.ResponseWriter, r *http.Request) {
 	loginSession, _ := store.Get(r, "loginSession")
-	if authorized := loginSession.Values["is_authorized"].(bool); authorized {
-		fmt.Fprintln(w, "Image!")
-		// http.ServeFile(w, r, "./template/html/stream.html")
-		// image, _ := getImageFromFilePath("data/image.jpg")
-		// services.ResponseWithImage(w, &image)
+	if authorized, _ := loginSession.Values["is_authorized"].(bool); authorized {
+		w.WriteHeader(http.StatusOK)
+		image, _ := getImageFromFilePath("data/image.jpg")
+		services.ResponseWithImageTemp(w, &image)
 	} else {
-		fmt.Fprintln(w, "Not login yet")
+		services.ResponseWithJson(w, http.StatusOK, "Not login yet")
 	}
 }
 
@@ -83,6 +83,7 @@ func getImageFromFilePath(filePath string) (image.Image, error) {
 		return nil, err
 	}
 	defer f.Close()
-	image, _, err := image.Decode(f)
-	return image, err
+	img, _, err := image.Decode(f)
+
+	return img, err
 }
