@@ -20,8 +20,7 @@ var routes []Route
 func init() {
 	register("GET", "/api/login", controller.Login, nil)
 	register("POST", "/api/login", controller.Login, nil)
-	register("Get", "/api/auth", controller.Auth, nil)
-	register("Get", "/api/video_feed", controller.VideoStream, nil)
+	register("GET", "/api/video_feed", controller.VideoStream, nil)
 }
 
 func NewRouter() *mux.Router {
