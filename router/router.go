@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 
-	controller "go_rest/controller"
+	controller "watch_go/controller"
 
 	"github.com/gorilla/mux"
 )
