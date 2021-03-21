@@ -1,4 +1,4 @@
-module go_rest
+module watch_go
 
 go 1.16
 

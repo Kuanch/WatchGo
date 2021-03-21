@@ -3,9 +3,8 @@ package main
 import (
 	"net/http"
 
-	routes "go_rest/router"
+	routes "watch_go/router"
 )
-
 
 func main() {
 
