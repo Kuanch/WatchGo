@@ -3,7 +3,8 @@ package utils
 import (
 	"fmt"
 
-	"github.com/Kuanch/mjpeg"
+	"watch_go/stream"
+
 	"gocv.io/x/gocv"
 )
 
@@ -12,9 +13,10 @@ var (
 	webcam    *gocv.VideoCapture
 )
 
-func VideoFeed(deviceID int, stream *mjpeg.Stream) {
+func VideoFeed(deviceID int, streamer *stream.Stream) {
 	webcam, webcamErr = gocv.OpenVideoCapture(deviceID)
 	if webcamErr != nil {
+		fmt.Println(webcamErr)
 		return
 	}
 	defer webcam.Close()
@@ -22,8 +24,12 @@ func VideoFeed(deviceID int, stream *mjpeg.Stream) {
 	defer img.Close()
 
 	for {
+		if <-streamer.Disconnect {
+			fmt.Println("Streamer disconnect")
+			break
+		}
 		if ok := webcam.Read(&img); !ok {
-			fmt.Printf("Device closed: %v\n", deviceID)
+			fmt.Println("Device closed: %v\n", deviceID)
 			return
 		}
 		if img.Empty() {
@@ -31,6 +37,6 @@ func VideoFeed(deviceID int, stream *mjpeg.Stream) {
 		}
 
 		buf, _ := gocv.IMEncode(".jpg", img)
-		stream.UpdateJPEG(buf)
+		streamer.UpdateJPEG(buf)
 	}
 }

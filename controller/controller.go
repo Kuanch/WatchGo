@@ -3,19 +3,19 @@ package controller
 import (
 	"fmt"
 	"os"
+
 	"watch_go/services"
-
-	"github.com/Kuanch/mjpeg"
-	"github.com/gorilla/sessions"
-
+	"watch_go/stream"
 	"watch_go/utils"
+
+	"github.com/gorilla/sessions"
 
 	"net/http"
 )
 
 var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 var (
-	stream *mjpeg.Stream
+	streamer *stream.Stream
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -57,10 +57,10 @@ func VideoStream(w http.ResponseWriter, r *http.Request) {
 	loginSession, _ := store.Get(r, "loginSession")
 	deviceID := 0
 	if authorized, _ := loginSession.Values["is_authorized"].(bool); authorized {
-		stream = mjpeg.NewStream()
-		go utils.VideoFeed(deviceID, stream)
-		stream.ServeHTTP(w, r)
+		streamer = stream.NewStream()
+		go utils.VideoFeed(deviceID, streamer)
+		streamer.ServeHTTP(w, r)
 	} else {
-		services.ResponseWithJson(w, http.StatusOK, "Not login yet")
+		services.ResponseWithJson(w, http.StatusUnauthorized, "Not login yet")
 	}
 }
